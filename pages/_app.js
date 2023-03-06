@@ -3,24 +3,39 @@ import Script from "next/script";
 import Router from "next/router";
 import React, { useEffect } from "react";
 import Head from "next/head";
+import { useRouter } from "next/router";
+
+import * as gtag from "../lib/gtag";
 
 export default function App({ Component, pageProps }) {
+	const router = useRouter();
+
+	useEffect(() => {
+		const handleRouteChange = (url) => {
+			/* invoke analytics function only for production */
+			if (isProduction) gtag.pageview(url);
+		};
+		router.events.on("routeChangeComplete", handleRouteChange);
+		return () => {
+			router.events.off("routeChangeComplete", handleRouteChange);
+		};
+	}, [router.events]);
+
 	return (
 		<>
 			<Script
-				strategy="lazyOnload"
-				src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS}`}
+				src={`https://www.googletagmanager.com/gtag/js?id=G-${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS}`}
+				strategy="afterInteractive"
 			/>
 
-			<Script strategy="lazyOnload">
+			<Script id="google-analytics" strategy="afterInteractive">
 				{`
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', '${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS}', {
-        page_path: window.location.pathname,
-        });
-    `}
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){window.dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', '${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS}');
+        `}
 			</Script>
 
 			<Head>
